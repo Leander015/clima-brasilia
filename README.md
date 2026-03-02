@@ -39,4 +39,3 @@ Após a execução, o script gerará dois arquivos na raiz do projeto:
 - `dados_climaticos.csv`
 
 ---
-*Desenvolvido como parte de um processo seletivo.*
