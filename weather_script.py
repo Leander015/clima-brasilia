@@ -6,8 +6,9 @@ import os
 def get_weather_data(lat=-15.7801, lon=-47.9292, city="Brasília"):
     """
     Busca dados climáticos da última semana usando a API Open-Meteo.
-    Default: São Paulo, BR.
+    Localização padrão: Brasília, DF.
     """
+    # Última semana
     end_date = datetime.now().date() - timedelta(days=1)
     start_date = end_date - timedelta(days=7)
     
@@ -15,10 +16,10 @@ def get_weather_data(lat=-15.7801, lon=-47.9292, city="Brasília"):
     params = {
         "latitude": lat,
         "longitude": lon,
-        "start_date": start_date.strftime("%Y-%m-%d"),
+        "start_date": start_date.strftime("%Y-%m-%d" ),
         "end_date": end_date.strftime("%Y-%m-%d"),
         "daily": ["temperature_2m_max", "temperature_2m_min", "precipitation_sum", "windspeed_10m_max"],
-        "timezone": "America/Sao_Paulo"
+        "timezone": "America/Sao_Paulo"  # Fuso horário oficial de Brasília
     }
     
     print(f"Buscando dados para {city} de {start_date} até {end_date}...")
@@ -28,6 +29,7 @@ def get_weather_data(lat=-15.7801, lon=-47.9292, city="Brasília"):
         data = response.json()
         daily_data = data['daily']
         
+        # Organizar os dados em um DataFrame do Pandas
         df = pd.DataFrame({
             "Data": daily_data['time'],
             "Temp Max (°C)": daily_data['temperature_2m_max'],
@@ -48,19 +50,19 @@ def save_to_excel(df, filename="dados_climaticos.xlsx"):
     print(f"Dados salvos com sucesso em {filename}")
 
 def main():
-    # Coletar dados
+    # Coletar dados de Brasília
     df = get_weather_data()
     
     if df is not None:
-        # Exibir prévia
+        # Exibir prévia no terminal
         print("\nPrévia dos dados coletados:")
         print(df.head(10))
         
-        # Salvar localmente
+        # Salvar os arquivos localmente
         save_to_excel(df)
         df.to_csv("dados_climaticos.csv", index=False)
         
-        print("\nTarefa concluída com sucesso!")
+        print("\nTarefa concluída com sucesso para Brasília!")
     else:
         print("Falha na execução do script.")
 
