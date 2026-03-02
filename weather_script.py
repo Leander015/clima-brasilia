@@ -1,70 +1,63 @@
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
-import os
 
-def get_weather_data(lat=-15.7801, lon=-47.9292, city="Brasília"):
-    """
-    Busca dados climáticos da última semana usando a API Open-Meteo.
-    Localização padrão: Brasília, DF.
-    """
-    # Última semana
-    end_date = datetime.now().date() - timedelta(days=1)
-    start_date = end_date - timedelta(days=7)
+# Configurações de Brasília
+LAT_BSB = -15.7801
+LON_BSB = -47.9292
+
+def buscar_clima_semana(lat, lon, cidade="Brasília"):
+    # Pegando o intervalo dos últimos 7 dias
+    hoje = datetime.now().date()
+    data_fim = hoje - timedelta(days=1)
+    data_inicio = data_fim - timedelta(days=7)
     
-    url = "https://archive-api.open-meteo.com/v1/archive"
-    params = {
+    # API Open-Meteo
+    endpoint = "https://archive-api.open-meteo.com/v1/archive"
+    
+    payload = {
         "latitude": lat,
         "longitude": lon,
-        "start_date": start_date.strftime("%Y-%m-%d" ),
-        "end_date": end_date.strftime("%Y-%m-%d"),
+        "start_date": data_inicio.isoformat( ),
+        "end_date": data_fim.isoformat(),
         "daily": ["temperature_2m_max", "temperature_2m_min", "precipitation_sum", "windspeed_10m_max"],
-        "timezone": "America/Sao_Paulo"  # Fuso horário oficial de Brasília
+        "timezone": "America/Sao_Paulo"
     }
     
-    print(f"Buscando dados para {city} de {start_date} até {end_date}...")
-    response = requests.get(url, params=params)
+    print(f"-> Coletando dados de {cidade} ({data_inicio} a {data_fim})...")
     
-    if response.status_code == 200:
-        data = response.json()
-        daily_data = data['daily']
+    try:
+        r = requests.get(endpoint, params=payload)
+        r.raise_for_status()
+        res = r.json()
         
-        # Organizar os dados em um DataFrame do Pandas
+        # Montando o dataframe com o que interessa
+        dados = res['daily']
         df = pd.DataFrame({
-            "Data": daily_data['time'],
-            "Temp Max (°C)": daily_data['temperature_2m_max'],
-            "Temp Min (°C)": daily_data['temperature_2m_min'],
-            "Chuva (mm)": daily_data['precipitation_sum'],
-            "Vento Max (km/h)": daily_data['windspeed_10m_max']
+            "data": dados['time'],
+            "temp_max": dados['temperature_2m_max'],
+            "temp_min": dados['temperature_2m_min'],
+            "chuva_mm": dados['precipitation_sum'],
+            "vento_max_kmh": dados['windspeed_10m_max'],
+            "cidade": cidade
         })
         
-        df['Cidade'] = city
         return df
-    else:
-        print(f"Erro ao acessar API: {response.status_code}")
+        
+    except Exception as e:
+        print(f"Erro na integração: {e}")
         return None
 
-def save_to_excel(df, filename="dados_climaticos.xlsx"):
-    """Salva o DataFrame em um arquivo Excel."""
-    df.to_excel(filename, index=False)
-    print(f"Dados salvos com sucesso em {filename}")
-
-def main():
-    # Coletar dados de Brasília
-    df = get_weather_data()
-    
-    if df is not None:
-        # Exibir prévia no terminal
-        print("\nPrévia dos dados coletados:")
-        print(df.head(10))
-        
-        # Salvar os arquivos localmente
-        save_to_excel(df)
-        df.to_csv("dados_climaticos.csv", index=False)
-        
-        print("\nTarefa concluída com sucesso para Brasília!")
-    else:
-        print("Falha na execução do script.")
-
 if __name__ == "__main__":
-    main()
+    # Principal
+    df_clima = buscar_clima_semana(LAT_BSB, LON_BSB)
+    
+    if df_clima is not None:
+        # Exportando para os formatos solicitados
+        df_clima.to_excel("dados_climaticos.xlsx", index=False)
+        df_clima.to_csv("dados_climaticos.csv", index=False)
+        
+        print("\nProcesso finalizado. Planilhas geradas com sucesso!")
+        print(df_clima.tail()) # Mostra as últimas linhas pra conferir
+    else:
+        print("Não foi possível gerar os arquivos.")
